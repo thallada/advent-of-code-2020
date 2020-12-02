@@ -1,44 +1,43 @@
 use anyhow::{anyhow, Result};
 
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
 const INPUT: &str = "input/input.txt";
 
-fn solve_part1(input_path: &str) -> Result<u32> {
+fn solve_part1(input_path: &str) -> Result<i32> {
     let file = File::open(input_path)?;
     let reader = BufReader::new(file);
 
-    let mut prev_lines = Vec::new();
+    let mut prev_numbers = HashSet::new();
     for line in reader.lines() {
-        let number: u32 = line?.parse()?;
-        for prev_number in prev_lines.iter() {
-            if number + prev_number == 2020 {
-                return Ok(number * prev_number);
-            }
+        let number: i32 = line?.parse()?;
+        let other_half = 2020 - number;
+        if prev_numbers.contains(&other_half) {
+            return Ok(number * other_half);
         }
-        prev_lines.push(number);
+        prev_numbers.insert(number);
     }
 
     Err(anyhow!("Found no pair of numbers that sums to 2020"))
 }
 
-fn solve_part2(input_path: &str) -> Result<u32> {
+fn solve_part2(input_path: &str) -> Result<i32> {
     let file = File::open(input_path)?;
     let reader = BufReader::new(file);
 
-    let mut prev_lines = Vec::new();
+    let mut prev_numbers = HashSet::new();
     for line in reader.lines() {
-        let number: u32 = line?.parse()?;
-        for prev_number in prev_lines.iter() {
-            for third_number in prev_lines.iter() {
-                if number + prev_number + third_number == 2020 {
-                    return Ok(number * prev_number * third_number);
-                }
+        let number: i32 = line?.parse()?;
+        for prev_number in prev_numbers.iter() {
+            let other_third = 2020 - prev_number - number;
+            if prev_numbers.contains(&other_third) {
+                return Ok(number * prev_number * other_third);
             }
         }
-        prev_lines.push(number);
+        prev_numbers.insert(number);
     }
 
     Err(anyhow!("Found no three numbers that sum to 2020"))
