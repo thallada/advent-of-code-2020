@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Context, Error, Result};
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::ops::Range;
+use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 const INPUT: &str = "input/input.txt";
@@ -11,7 +11,7 @@ const INPUT: &str = "input/input.txt";
 #[derive(Debug, PartialEq)]
 struct PasswordRule {
     letter: char,
-    range: Range<usize>,
+    range: RangeInclusive<usize>,
 }
 
 impl FromStr for PasswordRule {
@@ -21,26 +21,23 @@ impl FromStr for PasswordRule {
         let mut parts = s.split(" ");
         let mut range = parts
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule range"))?
+            .context("Failed to parse PasswordRule range")?
             .split("-");
         let start = range
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule range start"))?
+            .context("Failed to parse PasswordRule range start")?
             .parse()?;
-        let end: usize = range
+        let end = range
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule range end"))?
+            .context("Failed to parse PasswordRule range end")?
             .parse()?;
         let letter = parts
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule letter"))?
+            .context("Failed to parse PasswordRule letter")?
             .parse()?;
         Ok(Self {
             letter,
-            range: Range {
-                start,
-                end: end + 1,
-            },
+            range: start..=end,
         })
     }
 }
@@ -58,11 +55,11 @@ impl FromStr for PasswordEntry {
         let mut parts = s.split(": ");
         let rule = parts
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule range"))?
+            .context("Failed to parse PasswordEntry rule")?
             .parse()?;
         let password = parts
             .next()
-            .ok_or_else(|| anyhow!("Failed to parse PasswordRule range start"))?
+            .context("Failed to parse PasswordEntry password")?
             .to_owned();
         Ok(Self { rule, password })
     }
@@ -70,19 +67,20 @@ impl FromStr for PasswordEntry {
 
 impl PasswordEntry {
     fn validate_occurences(&self) -> bool {
-        self.rule
-            .range
-            .contains(&self.password.chars().fold(0, |acc, c| match c {
-                _ if c == self.rule.letter => acc + 1,
-                _ => acc,
-            }))
+        self.rule.range.contains(
+            &self
+                .password
+                .chars()
+                .filter(|&c| c == self.rule.letter)
+                .count(),
+        )
     }
 
     fn validate_positions(&self) -> bool {
         let mut chars = self.password.chars();
-        let left = chars.nth(self.rule.range.start - 1) == Some(self.rule.letter);
-        let right =
-            chars.nth(self.rule.range.end - self.rule.range.start - 2) == Some(self.rule.letter);
+        let left = chars.nth(self.rule.range.start() - 1) == Some(self.rule.letter);
+        let right = chars.nth(self.rule.range.end() - self.rule.range.start() - 1)
+            == Some(self.rule.letter);
         left ^ right
     }
 }
@@ -90,10 +88,9 @@ impl PasswordEntry {
 fn solve_part1(input_path: &str) -> Result<usize> {
     let file = File::open(input_path)?;
     let reader = BufReader::new(file);
-
     Ok(reader
         .lines()
-        .map(|line| PasswordEntry::from_str(&line.unwrap()).unwrap())
+        .map(|line| line.unwrap().parse::<PasswordEntry>().unwrap())
         .filter(|entry| entry.validate_occurences())
         .count())
 }
@@ -103,7 +100,7 @@ fn solve_part2(input_path: &str) -> Result<usize> {
     let reader = BufReader::new(file);
     Ok(reader
         .lines()
-        .map(|line| PasswordEntry::from_str(&line.unwrap()).unwrap())
+        .map(|line| line.unwrap().parse::<PasswordEntry>().unwrap())
         .filter(|entry| entry.validate_positions())
         .count())
 }
@@ -125,14 +122,14 @@ mod tests {
         let reader = BufReader::new(file);
         let input: Vec<PasswordEntry> = reader
             .lines()
-            .map(|line| PasswordEntry::from_str(&line.unwrap()).unwrap())
+            .map(|line| line.unwrap().parse::<PasswordEntry>().unwrap())
             .collect();
         assert_eq!(
             input[0],
             PasswordEntry {
                 rule: PasswordRule {
                     letter: 'a',
-                    range: Range { start: 1, end: 4 }
+                    range: 1..=3,
                 },
                 password: "abcde".to_string(),
             }
@@ -142,7 +139,7 @@ mod tests {
             PasswordEntry {
                 rule: PasswordRule {
                     letter: 'b',
-                    range: Range { start: 1, end: 4 }
+                    range: 1..=3,
                 },
                 password: "cdefg".to_string(),
             }
@@ -152,7 +149,7 @@ mod tests {
             PasswordEntry {
                 rule: PasswordRule {
                     letter: 'c',
-                    range: Range { start: 2, end: 10 }
+                    range: 2..=9,
                 },
                 password: "ccccccccc".to_string(),
             }
