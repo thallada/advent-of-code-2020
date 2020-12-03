@@ -33,12 +33,12 @@ impl fmt::Display for Cell {
 
 #[derive(Debug, PartialEq)]
 struct Slope {
-    pattern: Vec<Vec<Cell>>,
+    topography: Vec<Vec<Cell>>,
 }
 
 impl fmt::Display for Slope {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in &self.pattern {
+        for row in &self.topography {
             writeln!(
                 f,
                 "{}",
@@ -53,26 +53,26 @@ impl fmt::Display for Slope {
 }
 
 #[derive(Debug, PartialEq)]
-struct Position {
+struct Vector {
     x: usize,
     y: usize,
 }
 
 impl Slope {
-    fn get_cell(&self, position: &Position) -> Cell {
-        let row = &self.pattern[position.y];
+    fn get_cell(&self, position: &Vector) -> Cell {
+        let row = &self.topography[position.y];
         row[position.x % row.len()]
     }
 
-    fn trees_in_traversal(&self, traversal: &Position) -> usize {
-        let mut position = Position { x: 0, y: 0 };
+    fn trees_in_traversal(&self, descent: &Vector) -> usize {
+        let mut position = Vector { x: 0, y: 0 };
         let mut tree_count = match self.get_cell(&position) {
             Cell::Tree => 1,
             _ => 0,
         };
-        while position.y < self.pattern.len() - 1 {
-            position.x += traversal.x;
-            position.y += traversal.y;
+        while position.y < self.topography.len() - 1 {
+            position.x += descent.x;
+            position.y += descent.y;
             tree_count += match self.get_cell(&position) {
                 Cell::Tree => 1,
                 _ => 0,
@@ -86,34 +86,34 @@ fn solve_part1(input_path: &str) -> Result<usize> {
     let file = File::open(input_path)?;
     let reader = BufReader::new(file);
     let slope = Slope {
-        pattern: reader
+        topography: reader
             .lines()
             .map(|line| line.unwrap().chars().map(Cell::from).collect::<Vec<Cell>>())
             .collect(),
     };
-    Ok(slope.trees_in_traversal(&Position { x: 3, y: 1 }))
+    Ok(slope.trees_in_traversal(&Vector { x: 3, y: 1 }))
 }
 
 fn solve_part2(input_path: &str) -> Result<usize> {
     let file = File::open(input_path)?;
     let reader = BufReader::new(file);
     let slope = Slope {
-        pattern: reader
+        topography: reader
             .lines()
             .map(|line| line.unwrap().chars().map(Cell::from).collect::<Vec<Cell>>())
             .collect(),
     };
-    let traversals: Vec<Position> = vec![
-        Position { x: 1, y: 1 },
-        Position { x: 3, y: 1 },
-        Position { x: 5, y: 1 },
-        Position { x: 7, y: 1 },
-        Position { x: 1, y: 2 },
+    let descents = vec![
+        Vector { x: 1, y: 1 },
+        Vector { x: 3, y: 1 },
+        Vector { x: 5, y: 1 },
+        Vector { x: 7, y: 1 },
+        Vector { x: 1, y: 2 },
     ];
-    Ok(traversals
+    Ok(descents
         .iter()
-        .map(|traversal| slope.trees_in_traversal(&traversal))
-        .fold(1, |acc, count| acc * count))
+        .map(|descent| slope.trees_in_traversal(&descent))
+        .product())
 }
 
 fn main() {
@@ -132,7 +132,7 @@ mod tests {
         let file = File::open(TEST_INPUT).unwrap();
         let reader = BufReader::new(file);
         let slope = Slope {
-            pattern: reader
+            topography: reader
                 .lines()
                 .map(|line| line.unwrap().chars().map(Cell::from).collect::<Vec<Cell>>())
                 .collect(),
