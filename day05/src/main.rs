@@ -23,24 +23,17 @@ impl FromStr for Seat {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let row = s.chars().take(7).try_fold(0..128, |range, c| match c {
-            'F' => Ok(range.start..(range.end - ((range.end - range.start) / 2))),
-            'B' => Ok((range.start + ((range.end - range.start) / 2))..range.end),
+        let row = s.chars().take(7).try_fold(0, |row, c| match c {
+            'F' => Ok(row << 1),
+            'B' => Ok(row << 1 | 1),
             _ => Err(anyhow!("Unrecognized row character: {}", c)),
         })?;
-        let col = s
-            .chars()
-            .skip(7)
-            .take(3)
-            .try_fold(0..8, |range, c| match c {
-                'L' => Ok(range.start..(range.end - ((range.end - range.start) / 2))),
-                'R' => Ok((range.start + ((range.end - range.start) / 2))..range.end),
-                _ => Err(anyhow!("Unrecognized row character: {}", c)),
-            })?;
-        Ok(Self {
-            row: row.start,
-            col: col.start,
-        })
+        let col = s.chars().skip(7).take(3).try_fold(0, |col, c| match c {
+            'L' => Ok(col << 1),
+            'R' => Ok(col << 1 | 1),
+            _ => Err(anyhow!("Unrecognized col character: {}", c)),
+        })?;
+        Ok(Self { row, col })
     }
 }
 
@@ -53,7 +46,7 @@ fn solve_part1(input_path: &str) -> Result<u32> {
         .map(|line| Seat::from_str(&line.unwrap()).unwrap())
         .map(|seat| seat.id())
         .max()
-        .ok_or(anyhow!("No seats found in input"))?)
+        .ok_or_else(|| anyhow!("No seats found in input"))?)
 }
 
 fn solve_part2(input_path: &str) -> Result<u32> {
