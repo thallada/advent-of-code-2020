@@ -1,10 +1,11 @@
-use anyhow::{anyhow, Context, Error, Result};
-
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::str::FromStr;
+use std::time::Instant;
+
+use anyhow::{anyhow, Context, Error, Result};
 
 const INPUT: &str = "input/input.txt";
 
@@ -98,18 +99,30 @@ fn solve_part2(input_path: &str) -> Result<i32> {
 
     let mut flip_pointer: i32 = 0;
     while flip_pointer < program.len() as i32 {
-        if let Some(result) = find_terminated_value(&program, flip_pointer) {
-            return Ok(result);
-        } else {
-            flip_pointer += 1;
+        if matches!(program[flip_pointer as usize], Operation::Nop(_) | Operation::Jmp(_)) {
+            if let Some(result) = find_terminated_value(&program, flip_pointer) {
+                return Ok(result);
+            }
         }
+        flip_pointer += 1;
     }
     Err(anyhow!("No fix found"))
 }
 
 fn main() {
+    let mut now = Instant::now();
     println!("Part 1: {}", solve_part1(INPUT).unwrap());
+    println!(
+        "(elapsed: {} ms)",
+        now.elapsed().as_micros() as f32 / 1000_f32
+    );
+    now = Instant::now();
+    println!("");
     println!("Part 2: {}", solve_part2(INPUT).unwrap());
+    println!(
+        "(elapsed: {} ms)",
+        now.elapsed().as_micros() as f32 / 1000_f32
+    );
 }
 
 #[cfg(test)]
