@@ -67,17 +67,11 @@ fn main() {
     let mut now = Instant::now();
     let part1 = solve_part1(INPUT, 25).unwrap();
     println!("Part 1: {}", part1);
-    println!(
-        "(elapsed: {} ms)",
-        now.elapsed().as_micros() as f32 / 1000_f32
-    );
+    println!("(elapsed: {:?})", now.elapsed());
     now = Instant::now();
     println!("");
     println!("Part 2: {}", solve_part2(INPUT, part1).unwrap());
-    println!(
-        "(elapsed: {} ms)",
-        now.elapsed().as_micros() as f32 / 1000_f32
-    );
+    println!("(elapsed: {:?})", now.elapsed());
 }
 
 #[cfg(test)]

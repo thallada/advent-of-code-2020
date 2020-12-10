@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Context, Error, Result};
-
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
+use std::time::Instant;
+
+use anyhow::{anyhow, Context, Error, Result};
 
 const INPUT: &str = "input/input.txt";
 
@@ -213,8 +214,13 @@ fn solve_part2(input_path: &str) -> Result<usize> {
 }
 
 fn main() {
+    let mut now = Instant::now();
     println!("Part 1: {}", solve_part1(INPUT).unwrap());
+    println!("(elapsed: {:?})", now.elapsed());
+    now = Instant::now();
+    println!("");
     println!("Part 2: {}", solve_part2(INPUT).unwrap());
+    println!("(elapsed: {:?})", now.elapsed());
 }
 
 #[cfg(test)]

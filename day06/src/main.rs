@@ -1,7 +1,8 @@
-use anyhow::Result;
-
 use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
+use std::time::Instant;
+
+use anyhow::Result;
 
 const INPUT: &str = "input/input.txt";
 
@@ -44,8 +45,13 @@ fn solve_part2(input_path: &str) -> Result<usize> {
 }
 
 fn main() {
+    let mut now = Instant::now();
     println!("Part 1: {}", solve_part1(INPUT).unwrap());
+    println!("(elapsed: {:?})", now.elapsed());
+    now = Instant::now();
+    println!("");
     println!("Part 2: {}", solve_part2(INPUT).unwrap());
+    println!("(elapsed: {:?})", now.elapsed());
 }
 
 #[cfg(test)]
