@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -42,13 +43,16 @@ impl Game {
 
     fn take_turn(&mut self) {
         self.turn += 1;
-        let new_num = if let Some(prev_turn) = self.prev_nums.get(&self.last_num) {
-            self.turn - prev_turn - 1
-        } else {
-            0
+        self.last_num = match self.prev_nums.entry(self.last_num) {
+            Entry::Occupied(mut entry) => {
+                let prev_turn = entry.insert(self.turn - 1);
+                self.turn - prev_turn - 1
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(self.turn - 1);
+                0
+            }
         };
-        self.prev_nums.insert(self.last_num, self.turn - 1);
-        self.last_num = new_num;
     }
 }
 
