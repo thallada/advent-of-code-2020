@@ -60,48 +60,58 @@ fn string_matches_rule<'a>(
     rules: &HashMap<usize, Rule>,
     rule: &Rule,
     ends: bool,
-) -> (&'a str, bool) {
-    if s.is_empty() {
-        return (s, false);
-    }
+) -> Vec<(&'a str, bool)> {
     match rule {
         Rule::Char(c) => {
             if s.len() < 1 {
-                (s, false)
+                vec![(s, false)]
             } else if s.chars().next().expect("non-empty string") == *c {
                 let rest = &s[1..];
                 if !ends || (ends && rest.is_empty()) {
-                    (rest, true)
+                    vec![(rest, true)]
                 } else {
-                    (rest, false)
+                    vec![(rest, false)]
                 }
             } else {
-                (s, false)
+                vec![(s, false)]
             }
         }
         Rule::Seq(seq) => {
-            let mut rest = s;
+            let mut possibilities: Vec<(&'a str, bool)> = Vec::new();
             for (i, rule_index) in seq.iter().enumerate() {
-                let result = string_matches_rule(
-                    rest,
-                    rules,
-                    &rules[rule_index],
-                    if i == seq.len() - 1 { ends } else { false },
-                );
-                if !result.1 {
-                    return result;
+                if i == 0 {
+                    possibilities = string_matches_rule(
+                        s,
+                        rules,
+                        &rules[rule_index],
+                        if i == seq.len() - 1 { ends } else { false },
+                    );
+                } else {
+                    let mut new_possibilities = Vec::new();
+                    for possibility in possibilities {
+                        if possibility.1 {
+                            new_possibilities.append(&mut string_matches_rule(
+                                possibility.0,
+                                rules,
+                                &rules[rule_index],
+                                if i == seq.len() - 1 { ends } else { false },
+                            ));
+                        }
+                    }
+                    possibilities = new_possibilities;
                 }
-                rest = result.0;
             }
-            (rest, true)
+            possibilities
         }
         Rule::Or((left, right)) => {
-            let result = string_matches_rule(s, rules, &Rule::Seq(left.to_vec()), ends);
-            if result.1 {
-                return result;
-            }
-            let result = string_matches_rule(s, rules, &Rule::Seq(right.to_vec()), ends);
-            result
+            let mut possibilities = string_matches_rule(s, rules, &Rule::Seq(left.to_vec()), ends);
+            possibilities.append(&mut string_matches_rule(
+                s,
+                rules,
+                &Rule::Seq(right.to_vec()),
+                ends,
+            ));
+            possibilities
         }
     }
 }
@@ -126,8 +136,8 @@ fn solve_part1(input_path: &str) -> Result<usize> {
     Ok(strings
         .iter()
         .filter(|s| {
-            let result = string_matches_rule(&s, &rules, &rules[&0], true);
-            result.1 && result.0.is_empty()
+            let results = string_matches_rule(&s, &rules, &rules[&0], true);
+            results.iter().any(|result| result.1 && result.0.is_empty())
         })
         .count())
 }
@@ -158,8 +168,8 @@ fn solve_part2(input_path: &str) -> Result<usize> {
     Ok(strings
         .into_iter()
         .filter(|s| {
-            let result = string_matches_rule(&s, &rules, &rules[&0], true);
-            result.1 && result.0.is_empty()
+            let results = string_matches_rule(&s, &rules, &rules[&0], true);
+            results.iter().any(|result| result.1 && result.0.is_empty())
         })
         .count())
 }
@@ -214,7 +224,7 @@ mod tests {
     #[test]
     fn solves_part2() {
         assert_eq!(solve_part1(TEST_INPUT2).unwrap(), 3);
-        assert_eq!(solve_part1(TEST_INPUT3).unwrap(), 6);
+        assert_eq!(solve_part1(TEST_INPUT3).unwrap(), 1);
         assert_eq!(solve_part2(TEST_INPUT2).unwrap(), 12);
     }
 }
